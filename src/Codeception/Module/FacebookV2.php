@@ -34,14 +34,12 @@ use Codeception\Lib\Driver\FacebookV2 as FacebookDriver;
  * ### Config example
  *
  *     modules:
- *         enabled: [Facebook]
+ *         enabled: [FacebookV2]
  *         config:
- *             Facebook:
+ *             FacebookV2:
  *                 app_id: 412345678901234
  *                 secret: ccb79c1b0fdff54e4f7c928bf233aea5
- *                 permissions: [email, publish_stream]
- *                 test_user:
- *                     access_token: CAA2F.......
+ *                 permissions: [public_profile,user_friends,email]
  *
  * ###  Test example:
  *
@@ -110,11 +108,7 @@ class FacebookV2 extends BaseModule
             $this->config['test_user']['permissions'] = array();
         }
 
-        $this->facebook = new FacebookDriver(
-            array(
-                 'appId'  => $this->config['app_id'],
-                 'secret' => $this->config['secret'],
-            ),
+        $this->facebook = new FacebookDriver($this->config,
             function ($title, $message) {
                 if (version_compare(PHP_VERSION, '5.4', '>=')) {
                     $this->debugSection($title, $message);
