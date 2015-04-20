@@ -10,7 +10,7 @@ use Facebook\FacebookRequest;
 use Facebook\FacebookRequestException;
 use Facebook\FacebookRedirectLoginHelper;
 
-class Facebook
+class FacebookV2
 {
     protected $logCallback;
     protected $configuration;
