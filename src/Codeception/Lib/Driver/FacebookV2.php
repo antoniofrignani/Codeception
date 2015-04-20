@@ -5,6 +5,8 @@
 
 namespace Codeception\Lib\Driver;
 
+use Exception;
+use Facebook\FacebookSDKException;
 use Facebook\FacebookSession;
 use Facebook\FacebookRequest;
 use Facebook\FacebookRequestException;
@@ -14,7 +16,6 @@ class FacebookV2
 {
     protected $logCallback;
     protected $configuration;
-    protected $accessToken;
     protected $session;
     protected $request;
     protected $response;
@@ -26,7 +27,14 @@ class FacebookV2
             $this->logCallback = $logCallback;
         }
 
-        FacebookSession::setDefaultApplication($config['app_id'], $config['secret']);
+        $this->configuration = $config;
+
+        FacebookSession::setDefaultApplication($this->configuration['app_id'], $this->configuration['secret']);
+    }
+
+    protected function getAppID()
+    {
+        return ($this->configuration['app_id']);
     }
 
     public function setAccessToken($accessToken)
@@ -37,7 +45,6 @@ class FacebookV2
             $this->session = null;
         }
 
-        $this->accessToken = $accessToken;
         return $this;
     }
 
@@ -69,7 +76,12 @@ class FacebookV2
 
     public function getAccessToken()
     {
-        return $this->accessToken;
+        if ($this->testUser) return $this->testUser->getProperty('access_token');
+    }
+
+    public function getUserID()
+    {
+        if ($this->testUser) return $this->testUser->getProperty('id');
     }
 
     public function getLoginUrl()
@@ -113,18 +125,18 @@ class FacebookV2
     /**
      * @inheritdoc
      */
-    public function api( /* polymorphic */)
+    public function api($method = 'GET', $endpoint = '/me', $options = [])
     {
         if (is_callable($this->logCallback)) {
             call_user_func($this->logCallback, 'Facebook API request', func_get_args());
         }
 
-        $this->request = new FacebookRequest($this->session, func_get_args());
+        $this->request = new FacebookRequest($this->session, $method, $endpoint, $options);
 
         $this->response = $this->request->execute();
 
         if (is_callable($this->logCallback)) {
-            call_user_func($this->logCallback, 'Facebook API response', $response);
+            call_user_func($this->logCallback, 'Facebook API response', $this->response);
         }
 
         return $this->response;
@@ -137,33 +149,42 @@ class FacebookV2
      */
     public function createTestUser(array $permissions)
     {
-        
-        $response = (new FacebookRequest(
-                $this->session, 
-                'POST', 
-                '/' . $this->getAppId() . '/accounts/test-users', 
-                ['permissions'  => implode(',', $permissions)]
-            )
-        )->execute();
-        
-        // set user access token
-        $this->accessToken = $response->access_token;
-        $this->setAccessToken($this->accessToken);
+        try {
+            $this->session = FacebookSession::newAppSession();
+
+            $response = $this->api(
+                    'POST',
+                    '/' . $this->getAppID() . '/accounts/test-users',
+                    ['permissions'  => implode(',', $permissions)]
+                );
+
+            // set test user data
+            $this->testUser = $response->getGraphObject();
+        } catch (FacebookSDKException $e) {
+            return;
+        }
+
+        return $this;
+    }
+
+    public function deleteTestUser($testUser)
+    {
+        FacebookSession::setDefaultApplication($this->configuration['app_id'], $this->configuration['secret']);
+
+        $this->session = FacebookSession::newAppSession();
+        $this->setAccessToken($testUser->getAccessToken());
+
+        $response = $this->api(
+            'DELETE',
+            '/' . $testUser->getUserID(),
+             ['access_token' => $testUser->getAccessToken()]
+        );
 
         return $response;
     }
 
-    public function deleteTestUser($testUserID)
-    {
-        $this->session = FacebookSession::newAppSession();
-        $this->api('/'.$testUserID,
-                 'DELETE',
-                 ['access_token' => $this->getApplicationAccessToken()]
-        );
-    }
-
     public function getLastPostsForTestUser()
     {
-        return $this->api('me/posts', 'GET');
+        return $this->api('GET', '/me/posts');
     }
 }

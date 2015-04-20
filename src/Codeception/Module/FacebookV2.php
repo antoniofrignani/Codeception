@@ -91,9 +91,9 @@ class FacebookV2 extends BaseModule
 
     protected function deleteTestUser()
     {
-        if (array_key_exists('id', $this->testUser)) {
+        if ($this->testUser) {
             // make api-call for test user deletion
-            $this->facebook->deleteTestUser($this->testUser['id']);
+            $this->facebook->deleteTestUser($this->testUser);
             $this->testUser = array();
         }
     }
@@ -131,14 +131,14 @@ class FacebookV2 extends BaseModule
      */
     public function haveFacebookTestUserAccount($renew = false)
     {
-        if ($renew) {
-            $this->deleteTestUser();
+        if ($renew && $this->testUser) {
+            $this->deleteTestUser($this->testUser);
         }
 
         // make api-call for test user creation only if it's not yet created
-        if (! array_key_exists('id', $this->testUser)) {
+        if (empty($this->testUser)) {
             $this->testUser = $this->facebook->createTestUser(
-                $this->config['test_user']['permissions']
+                $this->config['permissions']
             );
         }
     }
@@ -180,7 +180,7 @@ class FacebookV2 extends BaseModule
      */
     public function grabFacebookTestUserAccessToken()
     {
-        return $this->facebook->getAccessToken();
+        return $this->testUser->getAccessToken();
     }
 
     /**
