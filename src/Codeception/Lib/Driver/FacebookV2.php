@@ -79,9 +79,29 @@ class FacebookV2
         if ($this->testUser) return $this->testUser->getProperty('access_token');
     }
 
-    public function getUserID()
+    /**
+     * Returns URL for test user auto-login.
+     *
+     * @return string
+     */
+    public function grabFacebookTestUserLoginUrl()
+    {
+        if ($this->testUser) return $this->testUser->getProperty('login_url');
+    }
+
+    public function getTestUserID()
     {
         if ($this->testUser) return $this->testUser->getProperty('id');
+    }
+
+    public function getTestUserEmail()
+    {
+        if ($this->testUser) return $this->testUser->getProperty('email');
+    }
+
+    public function getTestUserPassword()
+    {
+        if ($this->testUser) return $this->testUser->getProperty('password');
     }
 
     public function getLoginUrl()
@@ -155,7 +175,11 @@ class FacebookV2
             $response = $this->api(
                     'POST',
                     '/' . $this->getAppID() . '/accounts/test-users',
-                    ['permissions'  => implode(',', $permissions)]
+                    [
+                        'permissions'  => implode(',', $permissions),
+                        'installed' => true,
+
+                    ]
                 );
 
             // set test user data
@@ -176,7 +200,7 @@ class FacebookV2
 
         $response = $this->api(
             'DELETE',
-            '/' . $testUser->getUserID(),
+            '/' . $testUser->getTestUserID(),
              ['access_token' => $testUser->getAccessToken()]
         );
 

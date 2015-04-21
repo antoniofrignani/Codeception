@@ -157,7 +157,7 @@ class FacebookV2 extends BaseModule
             );
         }
 
-        if (! array_key_exists('id', $this->testUser)) {
+        if (empty($this->testUser)) {
             throw new ModuleException(
                 __CLASS__,
                 'Facebook test user was not found. Did you forget to create one?'
@@ -166,11 +166,15 @@ class FacebookV2 extends BaseModule
 
         /** @var PhpBrowser $phpBrowser */
         $phpBrowser = $this->getModule('PhpBrowser');
+        $phpBrowserURL = $phpBrowser->_getUrl();
 
         // go to facebook and make login; it work only if you visit facebook.com first
-        $phpBrowser->amOnPage('https://www.facebook.com/');
-        $phpBrowser->amOnPage($this->grabFacebookTestUserLoginUrl());
-        $phpBrowser->seeCurrentUrlMatches('~/profile.php~');
+        $phpBrowser->amOnUrl('https://www.facebook.com/');
+        //$phpBrowser->amOnPage($this->testUser->grabFacebookTestUserLoginUrl());
+        $phpBrowser->fillField(['name' => 'email'], $this->grabFacebookTestUserEmail());
+        $phpBrowser->fillField(['name' => 'pass'], $this->grabFacebookTestUserPassword());
+        $phpBrowser->click('input[type=submit]', '#loginbutton');
+        $phpBrowser->amOnUrl($phpBrowserURL);
     }
 
     /**
@@ -190,7 +194,7 @@ class FacebookV2 extends BaseModule
      */
     public function grabFacebookTestUserId()
     {
-        return $this->testUser['id'];
+        return $this->testUser->getTestUserID();
     }
 
     /**
@@ -200,7 +204,17 @@ class FacebookV2 extends BaseModule
      */
     public function grabFacebookTestUserEmail()
     {
-        return $this->testUser['email'];
+        return $this->testUser->getTestUserEmail();
+    }
+
+    /**
+     * Returns the test user password.
+     *
+     * @return string
+     */
+    public function grabFacebookTestUserPassword()
+    {
+        return $this->testUser->getTestUserPassword();
     }
 
     /**
@@ -210,7 +224,7 @@ class FacebookV2 extends BaseModule
      */
     public function grabFacebookTestUserLoginUrl()
     {
-        return $this->testUser['login_url'];
+        return $this->facebook->grabFacebookTestUserLoginUrl();
     }
 
     /**
